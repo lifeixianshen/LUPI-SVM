@@ -19,23 +19,11 @@ class ClassifierBase:
     """
     
     def __init__(self,**kwargs):
-    
-        if 'epochs' in kwargs:
-            self.epochs=kwargs['epochs']
-        else:
-            self.epochs=100
-        if 'Lambda' in kwargs:
-            self.Lambda=kwargs['Lambda']
-        else:
-            self.Lambda=0.01
-        if 'Lambda_star' in kwargs:
-            self.Lambda_star=kwargs['Lambda_star']
-        else:
-            self.Lambda_star=0.01
-        if 'Lambda_s' in kwargs:
-            self.Lambda_s=kwargs['Lambda_s']
-        else:
-            self.Lambda_s=0.001
+
+        self.epochs = kwargs.get('epochs', 100)
+        self.Lambda = kwargs.get('Lambda', 0.01)
+        self.Lambda_star = kwargs.get('Lambda_star', 0.01)
+        self.Lambda_s = kwargs.get('Lambda_s', 0.001)
         self.w=None
         self.w_star=None
         self.Name=None
@@ -46,8 +34,7 @@ class ClassifierBase:
         
     def predict_score(self,test_example):
         w=self.w
-        pred_score=test_example.dot(w.T)
-        return pred_score
+        return test_example.dot(w.T)
     def save(self,ofname):
         with open(ofname,'w') as fout:
             fout.write(self.toString())
@@ -56,13 +43,13 @@ class ClassifierBase:
            self.fromString(fin.read())         
     def toString(self):
         import json
-        s='#Name='+str(self.__class__)
-        s+='#w='+str(json.dumps(self.w.tolist()))
-        s+='#w_star='+str(json.dumps(self.w_star.tolist()))
-        s+='#Epochs='+str(self.epochs)  
-        s+='#Lambda='+str(self.Lambda)
-        s+='#Lambda_star='+str(self.Lambda_star)
-        s+='#Lambda_s='+str(self.Lambda_s)
+        s = f'#Name={str(self.__class__)}'
+        s += f'#w={json.dumps(self.w.tolist())}'
+        s += f'#w_star={json.dumps(self.w_star.tolist())}'
+        s += f'#Epochs={str(self.epochs)}'
+        s += f'#Lambda={str(self.Lambda)}'
+        s += f'#Lambda_star={str(self.Lambda_star)}'
+        s += f'#Lambda_s={str(self.Lambda_s)}'
         return s
         
     def fromString(self,s):    
@@ -121,7 +108,7 @@ class linclassLUPI(ClassifierBase):
         
         siz1=np.shape(dataset[0][0])[0]
         siz2=np.shape(dataset[0][1])[0]
-        w=np.array(np.zeros(siz1))  
+        w=np.array(np.zeros(siz1))
         w_star=np.array(np.zeros(siz2))
         T=(len(dataset))*self.epochs
         for t in range(T):
@@ -132,7 +119,13 @@ class linclassLUPI(ClassifierBase):
             if (t)%self.epochs==0:
                 np.random.shuffle(dataset)
             instance_chosen=dataset[(t-1)%len(dataset)]
-            if 1-instance_chosen[2]*(instance_chosen[0].dot(w.T))-instance_chosen[2]*(instance_chosen[1].dot(w_star.T))>0 and 1-instance_chosen[2]*(instance_chosen[0].dot(w.T))>0:
+            if (
+                1
+                - instance_chosen[2] * (instance_chosen[0].dot(w.T))
+                - instance_chosen[2] * (instance_chosen[1].dot(w_star.T))
+                > 0
+                and instance_chosen[2] * (instance_chosen[0].dot(w.T)) < 1
+            ):
                 update_w=True
             if -instance_chosen[2]*(instance_chosen[1].dot(w_star.T))>0 or 1-instance_chosen[2]*(instance_chosen[0].dot(w.T))-instance_chosen[2]*(instance_chosen[1].dot(w_star.T))>0:
                 update_w_star=True
